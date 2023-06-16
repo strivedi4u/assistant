@@ -4,20 +4,28 @@ import { useState, useEffect } from "react";
 import axios from 'axios';
 import YouTube from 'react-youtube';
 
-const getNews = async () => {
-    const newsApiKey = 'a6d2f06ffe3a449a87319ea551f1e542'; // Replace with your News API key
-    const url = `https://newsapi.org/v2/top-headlines?country=in&apiKey=${newsApiKey}`;
-  
-    try {
-      const response = await axios.get(url);
-      const articles = response.data.articles;
-      const newsTitles = articles.map(article => article.title);
-      return newsTitles;
-    } catch (error) {
-      console.error('Error fetching news:', error);
-      return [];
-    }
-  };
+    const getNews = async () => {
+      const newsApiKey = 'a6d2f06ffe3a449a87319ea551f1e542'; // Replace with your News API key
+      const url = `https://newsapi.org/v2/top-headlines?country=in&apiKey=${newsApiKey}`;
+    
+      try {
+        const response = await fetch(url);
+        if (response.ok) {
+          const data = await response.json();
+          const articles = data.articles;
+          const newsTitles = articles.map(article => article.title);
+          return newsTitles;
+        } else {
+          console.error('Error fetching news:', response.status);
+          console.log('Response headers:', response.headers);
+          console.log('Response body:', await response.text());
+          return [];
+        }
+      } catch (error) {
+        console.error('Error fetching news:', error);
+        return [];
+      }
+    };
 
   const extractLocation = async (query) => {
     const patterns = [
@@ -141,7 +149,16 @@ const App = () => {
           } else if (query.includes("news")) {
         // speakResult("Processing news request...");
         // // Call the necessary news-related functions here
-        getNews().then(news => speakResult(news));
+        try {
+          const news = await getNews();
+          if (news.length > 0) {
+            speakResult(news.join('. '));
+          } else {
+            speakResult("Sorry, I couldn't fetch the news at the moment.");
+          }
+        } catch (error) {
+          console.error('An error occurred:', error);
+        }
       } else if (query.includes("play")) {
         speakResult("Processing play request...");
         playSong(query);
